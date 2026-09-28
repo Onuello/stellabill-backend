@@ -90,10 +90,22 @@ afterEach(() => {
 });
 
 describe('createStellarBillClient - configuration', () => {
-  it('throws StellarBillConfigError on missing baseUrl', () => {
-    expect(() => createStellarBillClient({ baseUrl: undefined as unknown as string })).toThrow(
-      StellarBillConfigError,
-    );
+  it('rejects an undefined baseUrl with a stable error before creating requests', () => {
+    const { fetch, calls } = mockFetchOnce({ status: 'ok', service: 'stellarbill-backend' });
+    let error: unknown;
+
+    try {
+      createStellarBillClient({ baseUrl: undefined as unknown as string, fetch });
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(error).toBeInstanceOf(StellarBillConfigError);
+    expect(error).toMatchObject({ message: 'baseUrl is required' });
+    expect(calls).toHaveLength(0);
+  });
+
+  it('rejects other invalid baseUrl values', () => {
     expect(() => createStellarBillClient({ baseUrl: '' })).toThrow(/non-empty/);
     expect(() => createStellarBillClient({ baseUrl: '   ' })).toThrow(/non-empty/);
     expect(() => createStellarBillClient({ baseUrl: 'not-a-url' })).toThrow(/not a valid URL/);
